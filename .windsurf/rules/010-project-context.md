@@ -4,7 +4,7 @@ trigger: manual
 
 # Project Context
 
-Project Name: Geo meo
+Project Name: Geo Memo
 
 Purpose: Fun web app
 
