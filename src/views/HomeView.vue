@@ -1,117 +1,62 @@
 <template>
   <main class="app" data-i18n-scope>
     <header class="app__header">
-      <h1 class="app__title">{{ t('appTitle') }}</h1>
-      <p class="app__tagline">{{ t('tagline') }}</p>
+      <div class="app__header-text">
+        <h1 class="app__title">{{ t('appTitle') }}</h1>
+        <p class="app__tagline">{{ t('tagline') }}</p>
+      </div>
+      <section class="panel auth-panel app__header-auth">
+        <template v-if="!authStore.user">
+          <h2 class="panel__title">{{ t('authTitle') }}</h2>
+          <form class="auth-form" novalidate @submit.prevent="handleSignIn">
+            <div class="form-field">
+              <label class="form-label" for="auth-email">{{ t('authEmailLabel') }}</label>
+              <input
+                id="auth-email"
+                v-model="authEmail"
+                class="input"
+                type="email"
+                autocomplete="email"
+                required
+                :placeholder="t('authEmailPlaceholder')"
+              />
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="auth-password">{{ t('authPasswordLabel') }}</label>
+              <input
+                id="auth-password"
+                v-model="authPassword"
+                class="input"
+                type="password"
+                autocomplete="current-password"
+                required
+                :placeholder="t('authPasswordPlaceholder')"
+              />
+            </div>
+            <div class="auth-actions">
+              <button class="button" type="submit" :disabled="authDisabled">
+                {{ t('authSignInButton') }}
+              </button>
+              <button class="button button--ghost" type="button" :disabled="authDisabled" @click="handleSignUp">
+                {{ t('authSignUpButton') }}
+              </button>
+            </div>
+            <p v-if="authError" class="auth-error">{{ authError }}</p>
+          </form>
+        </template>
+        <template v-else>
+          <div class="auth-status">
+            <p class="auth-status__text">
+              {{ t('authSignedInAs') }}<br />
+              <strong>{{ authStore.user.email }}</strong>
+            </p>
+            <button class="button button--ghost" type="button" :disabled="authSigningOut" @click="handleSignOut">
+              {{ t('authSignOutButton') }}
+            </button>
+          </div>
+        </template>
+      </section>
     </header>
-
-    <section
-      id="location-status"
-      class="status"
-      :class="statusClass"
-      role="status"
-    >
-      {{ statusMessage }}
-    </section>
-
-    <section class="panel auth-panel">
-      <template v-if="!authStore.user">
-        <h2 class="panel__title">{{ t('authTitle') }}</h2>
-        <form class="auth-form" novalidate @submit.prevent="handleSignIn">
-          <div class="form-field">
-            <label class="form-label" for="auth-email">{{ t('authEmailLabel') }}</label>
-            <input
-              id="auth-email"
-              v-model="authEmail"
-              class="input"
-              type="email"
-              autocomplete="email"
-              required
-              :placeholder="t('authEmailPlaceholder')"
-            />
-          </div>
-          <div class="form-field">
-            <label class="form-label" for="auth-password">{{ t('authPasswordLabel') }}</label>
-            <input
-              id="auth-password"
-              v-model="authPassword"
-              class="input"
-              type="password"
-              autocomplete="current-password"
-              required
-              :placeholder="t('authPasswordPlaceholder')"
-            />
-          </div>
-          <div class="auth-actions">
-            <button class="button" type="submit" :disabled="authDisabled">
-              {{ t('authSignInButton') }}
-            </button>
-            <button class="button button--ghost" type="button" :disabled="authDisabled" @click="handleSignUp">
-              {{ t('authSignUpButton') }}
-            </button>
-          </div>
-          <p v-if="authError" class="auth-error">{{ authError }}</p>
-        </form>
-      </template>
-      <template v-else>
-        <div class="auth-status">
-          <p class="auth-status__text">
-            {{ t('authSignedInAs') }}<br />
-            <strong>{{ authStore.user.email }}</strong>
-          </p>
-          <button class="button button--ghost" type="button" :disabled="authSigningOut" @click="handleSignOut">
-            {{ t('authSignOutButton') }}
-          </button>
-        </div>
-      </template>
-    </section>
-
-    <section class="panel">
-      <h2 class="panel__title">{{ t('createCommentTitle') }}</h2>
-      <form novalidate @submit.prevent="handleSubmit">
-        <label class="sr-only" for="comment-text">{{ t('commentLabel') }}</label>
-        <textarea
-          id="comment-text"
-          class="input"
-          rows="3"
-          :maxlength="MAX_COMMENT_LENGTH"
-          :placeholder="t('commentPlaceholder')"
-          v-model="formText"
-          required
-        ></textarea>
-        <div class="form-row form-row--meta">
-          <span class="char-counter">
-            <span>{{ t('characterCountLabel') }}</span>
-            <output aria-live="polite">{{ charCount }} / {{ MAX_COMMENT_LENGTH }}</output>
-          </span>
-          <button class="button" type="submit" :disabled="commentDisabled">
-            {{ commentButtonLabel }}
-          </button>
-        </div>
-        <p v-if="commentError" class="auth-error">{{ commentError }}</p>
-      </form>
-    </section>
-
-    <section class="panel panel--simulation">
-      <div class="toggle">
-        <input type="checkbox" id="simulation-mode" v-model="isSimulation" />
-        <label for="simulation-mode">{{ t('simulationToggle') }}</label>
-      </div>
-      <p class="hint">{{ t('simulationHint') }}</p>
-      <div id="simulation-panel" class="simulation" v-show="isSimulation">
-        <div
-          id="map"
-          ref="mapContainer"
-          class="map"
-          role="application"
-          aria-label="Test map"
-        ></div>
-        <p>
-          <span>{{ t('simulationCoordsLabel') }}</span>
-          <span id="simulation-coords" class="coords">{{ simulationCoordsDisplay }}</span>
-        </p>
-      </div>
-    </section>
 
     <section class="panel">
       <h2 class="panel__title">{{ t('nearbyTitle') }}</h2>
@@ -147,6 +92,62 @@
       </ul>
       <p v-else class="empty">{{ t('noComments') }}</p>
     </section>
+
+    <section class="panel">
+      <h2 class="panel__title">{{ t('createCommentTitle') }}</h2>
+      <form novalidate @submit.prevent="handleSubmit">
+        <label class="sr-only" for="comment-text">{{ t('commentLabel') }}</label>
+        <textarea
+          id="comment-text"
+          class="input"
+          rows="3"
+          :maxlength="MAX_COMMENT_LENGTH"
+          :placeholder="t('commentPlaceholder')"
+          v-model="formText"
+          required
+        ></textarea>
+        <div class="form-row form-row--meta">
+          <span class="char-counter">
+            <span>{{ t('characterCountLabel') }}</span>
+            <output aria-live="polite">{{ charCount }} / {{ MAX_COMMENT_LENGTH }}</output>
+          </span>
+          <button class="button" type="submit" :disabled="commentDisabled">
+            {{ commentButtonLabel }}
+          </button>
+        </div>
+        <p v-if="commentError" class="auth-error">{{ commentError }}</p>
+      </form>
+    </section>
+
+    <section class="panel panel--simulation">
+      <div class="toggle">
+        <input type="checkbox" id="simulation-mode" v-model="isSimulation" />
+        <label for="simulation-mode">{{ t('simulationToggle') }}</label>
+      </div>
+      <p class="hint">{{ t('simulationHint') }}</p>
+      <div
+        id="location-status"
+        class="status"
+        :class="statusClass"
+        role="status"
+      >
+        {{ statusMessage }}
+      </div>
+      <div id="simulation-panel" class="simulation" v-show="isSimulation">
+        <div
+          id="map"
+          ref="mapContainer"
+          class="map"
+          role="application"
+          aria-label="Test map"
+        ></div>
+        <p>
+          <span>{{ t('simulationCoordsLabel') }}</span>
+          <span id="simulation-coords" class="coords">{{ simulationCoordsDisplay }}</span>
+        </p>
+      </div>
+    </section>
+
   </main>
 </template>
 

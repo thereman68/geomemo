@@ -38,8 +38,34 @@ body {
 }
 
 .app__header {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
   padding-top: 1rem;
+}
+
+.app__header-text {
+  text-align: left;
+}
+
+.app__header-auth {
+  align-self: stretch;
+}
+
+@media (min-width: 720px) {
+  .app__header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .app__header-text {
+    max-width: 340px;
+  }
+
+  .app__header-auth {
+    flex: 1;
+  }
 }
 
 .app__title {

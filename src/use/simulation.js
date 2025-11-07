@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import L from 'leaflet';
 
 const DEFAULT_SIM_LOCATION = { lat: 51.505, lng: -0.09 };
@@ -9,6 +9,7 @@ export function useSimulation({ setStatus, t, currentLocation }) {
   const mapContainer = ref(null);
   const map = ref(null);
   const simulationMarker = ref(null);
+  const hasManualSelection = ref(false);
 
   const activeLocation = computed(() =>
     isSimulation.value ? simulationLocation.value : currentLocation.value
@@ -30,17 +31,25 @@ export function useSimulation({ setStatus, t, currentLocation }) {
       16
     );
 
+    nextTick(() => {
+      map.value?.invalidateSize();
+    });
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map.value);
 
     map.value.on('click', (event) => {
-      updateSimulationLocation(event.latlng);
+      updateSimulationLocation(event.latlng, { manual: true });
     });
   }
 
-  function updateSimulationLocation({ lat, lng }) {
+  function updateSimulationLocation({ lat, lng }, { manual = false } = {}) {
     simulationLocation.value = { lat, lng };
+
+    if (manual) {
+      hasManualSelection.value = true;
+    }
 
     if (map.value) {
       if (!simulationMarker.value) {
@@ -56,6 +65,11 @@ export function useSimulation({ setStatus, t, currentLocation }) {
 
   function initSimulation() {
     ensureMap();
+    if (map.value) {
+      nextTick(() => {
+        map.value?.invalidateSize();
+      });
+    }
     if (!simulationLocation.value) {
       updateSimulationLocation(currentLocation.value ?? DEFAULT_SIM_LOCATION);
     } else {
@@ -65,6 +79,7 @@ export function useSimulation({ setStatus, t, currentLocation }) {
 
   function teardownSimulation() {
     simulationLocation.value = null;
+    hasManualSelection.value = false;
     if (simulationMarker.value) {
       simulationMarker.value.remove();
       simulationMarker.value = null;
@@ -73,6 +88,16 @@ export function useSimulation({ setStatus, t, currentLocation }) {
       map.value.off();
     }
   }
+
+  watch(
+    () => currentLocation.value,
+    (location) => {
+      if (!location || !isSimulation.value || hasManualSelection.value) {
+        return;
+      }
+      updateSimulationLocation(location);
+    }
+  );
 
   return {
     isSimulation,
