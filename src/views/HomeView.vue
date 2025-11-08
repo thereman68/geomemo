@@ -2,6 +2,25 @@
   <main class="container py-5 py-lg-6" data-i18n-scope>
     <div class="row g-4">
       <div class="col-lg-8 d-flex flex-column gap-4">
+        <div
+          v-if="showStatusNotice"
+          :class="noticeClass"
+          class="alert d-flex flex-column flex-md-row align-items-md-center gap-2 mb-0"
+          role="status"
+        >
+          <div class="d-flex align-items-center gap-2">
+            <span aria-hidden="true">{{ noticeIcon }}</span>
+            <span class="fw-semibold">{{ statusMessage }}</span>
+          </div>
+          <button
+            v-if="statusType === 'error'"
+            class="btn btn-sm btn-outline-light mt-2 mt-md-0"
+            type="button"
+            @click="handleRetryLocation"
+          >
+            {{ t('retryLocation') }}
+          </button>
+        </div>
         <section class="card card-glass border-0 feed-card p-4">
           <div class="d-flex flex-column flex-md-row align-items-md-center gap-4">
             <div class="flex-grow-1">
@@ -36,7 +55,7 @@
                     :disabled="!hasLocation"
                   >
                     <option v-for="option in nearbyRadiusOptions" :key="option" :value="option">
-                      {{ option }} m
+                      {{ formatRadiusOption(option) }}
                     </option>
                   </select>
                 </div>
@@ -246,6 +265,7 @@ const {
   stopGeolocation,
   setStatus,
   currentLocation,
+  retryGeolocation,
 } = useGeolocation({ t });
 const {
   isSimulation,
@@ -261,7 +281,7 @@ const formText = ref('');
 const commentError = ref('');
 const submitting = ref(false);
 const nearbyRadius = ref(10);
-const nearbyRadiusOptions = [10, 50, 200];
+const nearbyRadiusOptions = [10, 50, 200, 500, 1000, 2000];
 const nearbySort = ref('recent');
 
 const charCount = computed(() => formText.value.length);
@@ -270,6 +290,13 @@ const statusClass = computed(() => ({
   'status--error': statusType.value === 'error',
   'status--success': statusType.value === 'success',
 }));
+const showStatusNotice = computed(() => statusType.value === 'info' || statusType.value === 'error');
+const noticeClass = computed(() =>
+  statusType.value === 'error'
+    ? 'alert-danger'
+    : 'alert-warning'
+);
+const noticeIcon = computed(() => (statusType.value === 'error' ? '⚠️' : '🛰️'));
 
 const historySort = ref('recent');
 const historyCommentsWithDistance = computed(() =>
@@ -305,6 +332,12 @@ const highlightHashtags = (text = '') =>
     const encoded = encodeTagParam(match);
     return `<a class="hashtag" href="#/tags/${encoded}">${match}</a>`;
   });
+const formatRadiusOption = (value) => {
+  if (value < 1000) return `${value} m`;
+  const km = value / 1000;
+  const formatted = Number.isInteger(km) ? km : km.toFixed(1);
+  return `${formatted} km`;
+};
 const hashtagRoute = (tag = '') => ({
   name: 'tag',
   params: { tag: tag.trim().replace(/^#/, '') },
@@ -366,6 +399,10 @@ function handleSubmit() {
     .finally(() => {
       submitting.value = false;
     });
+}
+
+function handleRetryLocation() {
+  retryGeolocation();
 }
 
 watch(

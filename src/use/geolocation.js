@@ -40,6 +40,10 @@ export function useGeolocation({ t }) {
         } else {
           setStatus('error', t('geoError'));
         }
+        if (watcherId.value != null) {
+          navigator.geolocation.clearWatch(watcherId.value);
+          watcherId.value = null;
+        }
       },
       GEO_OPTIONS
     );
@@ -53,6 +57,12 @@ export function useGeolocation({ t }) {
     watcherId.value = null;
   }
 
+  function retryGeolocation() {
+    stopGeolocation();
+    setStatus('info', t('locating'));
+    ensureGeolocation();
+  }
+
   return {
     statusMessage,
     statusType,
@@ -60,5 +70,6 @@ export function useGeolocation({ t }) {
     ensureGeolocation,
     stopGeolocation,
     setStatus,
+    retryGeolocation,
   };
 }

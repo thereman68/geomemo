@@ -36,6 +36,7 @@
   "geoDenied": "Location access denied. Turn on simulation mode to test manually.",
   "geoError": "We ran into a problem fetching your location.",
   "commentSaveError": "We couldn't save your comment. Please try again.",
+  "retryLocation": "Retry locating",
   "authTitle": "Account",
   "authEmailLabel": "Email",
   "authEmailPlaceholder": "you@example.com",
