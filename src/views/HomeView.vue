@@ -45,7 +45,7 @@
                     class="btn btn-sm"
                     :class="nearbySort === 'recent' ? 'btn-primary' : 'btn-outline-primary'"
                     type="button"
-                    @click="nearbySort = 'recent'"
+                    @click="setNearbySort('recent')"
                     :disabled="!hasLocation"
                   >
                     {{ t('nearbySortRecent') }}
@@ -54,7 +54,7 @@
                     class="btn btn-sm"
                     :class="nearbySort === 'nearest' ? 'btn-primary' : 'btn-outline-primary'"
                     type="button"
-                    @click="nearbySort = 'nearest'"
+                    @click="setNearbySort('nearest')"
                     :disabled="!hasLocation"
                   >
                     {{ t('nearbySortNearest') }}
@@ -154,7 +154,7 @@
                 :key="`history-${comment.id}`"
                 class="border border-light-subtle rounded-3 p-3 mb-3 bg-white"
               >
-                <p class="mb-2 fw-semibold">{{ comment.text }}</p>
+                <p class="mb-2 fw-semibold" v-html="highlightHashtags(comment.text)"></p>
                 <div class="text-soft small">
                   <time :datetime="comment.timestamp">{{ comment.relativeTime }}</time>
                   <span v-if="comment.distanceLabel" class="ms-2">· {{ comment.distanceLabel }}</span>
@@ -171,7 +171,12 @@
           <h2 class="h5 feed-section-title mb-3">Trending near you</h2>
           <ul class="list-unstyled mb-0 d-flex flex-wrap gap-2">
             <li v-for="tag in trendingTopics" :key="tag">
-              <span class="badge bg-light text-primary-emphasis px-3 py-2 rounded-pill border border-primary-subtle">{{ tag }}</span>
+              <RouterLink
+                class="badge bg-light text-primary-emphasis px-3 py-2 rounded-pill border border-primary-subtle text-decoration-none"
+                :to="hashtagRoute(tag)"
+              >
+                {{ tag }}
+              </RouterLink>
             </li>
           </ul>
         </section>
@@ -287,18 +292,23 @@ const sortedNearbyComments = computed(() => {
     return comments;
   }
 
-  const sorted = [...comments];
-  if (nearbySort.value === 'nearest') {
-    sorted.sort((a, b) => a.distance - b.distance);
-    return sorted;
+  if (nearbySort.value === 'nearest' && activeLocation.value) {
+    return [...comments].sort((a, b) => a.distance - b.distance);
   }
 
-  sorted.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  return sorted;
+  return [...comments].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 });
 const trendingTopics = computed(() => commentStore.trending);
+const encodeTagParam = (tag = '') => encodeURIComponent(tag.trim().replace(/^#/, ''));
 const highlightHashtags = (text = '') =>
-  text.replace(/(#[a-z0-9_]+)/gi, '<span class="hashtag">$1</span>');
+  text.replace(/(#[a-z0-9_]+)/gi, (match) => {
+    const encoded = encodeTagParam(match);
+    return `<a class="hashtag" href="#/tags/${encoded}">${match}</a>`;
+  });
+const hashtagRoute = (tag = '') => ({
+  name: 'tag',
+  params: { tag: tag.trim().replace(/^#/, '') },
+});
 const commentDisabled = computed(
   () =>
     !authStore.user ||
@@ -314,6 +324,10 @@ const commentButtonLabel = computed(() => {
   if (submitting.value) return t('submitButtonSubmitting');
   return t('submitButton');
 });
+
+function setNearbySort(mode) {
+  nearbySort.value = mode;
+}
 
 function handleSubmit() {
   const text = formText.value.trim();

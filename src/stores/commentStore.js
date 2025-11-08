@@ -64,6 +64,10 @@ function extractHashtags(text) {
   return matches.map((tag) => tag.trim());
 }
 
+function normalizeHashtag(tag = '') {
+  return tag.trim().replace(/^#/, '').toLowerCase();
+}
+
 function withRelativeTime(comment) {
   return {
     ...comment,
@@ -84,7 +88,7 @@ export const useCommentStore = defineStore('commentStore', () => {
 
     comments.value.forEach((comment) => {
       comment.hashtags.forEach((tag) => {
-        const normalized = tag.toLowerCase();
+        const normalized = normalizeHashtag(tag);
         if (!counts.has(normalized)) {
           counts.set(normalized, { label: tag, count: 0 });
         }
@@ -97,6 +101,17 @@ export const useCommentStore = defineStore('commentStore', () => {
       .slice(0, 6)
       .map((entry) => entry.label);
   });
+
+  function commentsByHashtag(tag) {
+    const normalized = normalizeHashtag(tag);
+    if (!normalized) return [];
+
+    return comments.value
+      .filter((comment) =>
+        comment.hashtags.some((hashtag) => normalizeHashtag(hashtag) === normalized)
+      )
+      .map(withRelativeTime);
+  }
 
   function nearby(referenceLocation, radiusMeters = DEFAULT_NEARBY_RADIUS_METERS) {
     if (!referenceLocation) return [];
@@ -211,6 +226,7 @@ export const useCommentStore = defineStore('commentStore', () => {
     historyWithDistance,
     nearby,
     trending: trendingHashtags,
+    commentsByHashtag,
     addComment,
     refresh,
     loading,

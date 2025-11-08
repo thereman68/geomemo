@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 
 const routes = [
@@ -14,13 +14,20 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/tags/:tag',
+    name: 'tag',
+    component: () => import('../views/TagView.vue'),
+    meta: { requiresAuth: true },
+    props: true,
+  },
+  {
     path: '/:pathMatch(.*)*',
     redirect: { name: 'login' },
   },
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
 });
 
