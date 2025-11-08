@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { supabase } from '../lib/supabaseClient';
 import { useAuthStore } from './authStore';
 
-const NEARBY_RADIUS_METERS = 10;
+const DEFAULT_NEARBY_RADIUS_METERS = 10;
 const EARTH_RADIUS_METERS = 6371e3;
 const HASHTAG_REGEX = /#[a-z0-9_]+/gi;
 
@@ -98,8 +98,9 @@ export const useCommentStore = defineStore('commentStore', () => {
       .map((entry) => entry.label);
   });
 
-  function nearby(referenceLocation) {
+  function nearby(referenceLocation, radiusMeters = DEFAULT_NEARBY_RADIUS_METERS) {
     if (!referenceLocation) return [];
+    const effectiveRadius = Number.isFinite(radiusMeters) && radiusMeters > 0 ? radiusMeters : DEFAULT_NEARBY_RADIUS_METERS;
     return comments.value
       .map((comment) => {
         const distance = computeDistanceMeters(referenceLocation, comment.location);
@@ -110,7 +111,7 @@ export const useCommentStore = defineStore('commentStore', () => {
           relativeTime: formatRelativeTime(comment.timestamp),
         };
       })
-      .filter((comment) => comment.distance <= NEARBY_RADIUS_METERS);
+      .filter((comment) => comment.distance <= effectiveRadius);
   }
 
   function historyWithDistance(referenceLocation) {

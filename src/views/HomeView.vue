@@ -17,13 +17,54 @@
 
         <section class="card card-glass border-0 feed-card">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h2 class="h4 mb-0 feed-section-title">{{ t('nearbyTitle') }}</h2>
-              <span v-if="hasLocation" class="badge bg-success-subtle text-success-emphasis">{{ t('nearbyTitle') }}</span>
+            <div
+              class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3"
+            >
+              <div class="d-flex align-items-center gap-2">
+                <h2 class="h4 mb-0 feed-section-title">{{ t('nearbyTitle') }}</h2>
+                <span v-if="hasLocation" class="badge bg-success-subtle text-success-emphasis">{{ t('nearbyTitle') }}</span>
+              </div>
+              <div
+                class="d-flex flex-wrap align-items-center justify-content-md-end gap-2"
+              >
+                <div class="d-flex align-items-center gap-1">
+                  <label class="visually-hidden" for="nearby-radius">{{ t('nearbyRadiusLabel') }}</label>
+                  <select
+                    id="nearby-radius"
+                    class="form-select form-select-sm"
+                    v-model.number="nearbyRadius"
+                    :disabled="!hasLocation"
+                  >
+                    <option v-for="option in nearbyRadiusOptions" :key="option" :value="option">
+                      {{ option }} m
+                    </option>
+                  </select>
+                </div>
+                <div class="btn-group" role="group" :aria-label="t('nearbySortLabel')">
+                  <button
+                    class="btn btn-sm"
+                    :class="nearbySort === 'recent' ? 'btn-primary' : 'btn-outline-primary'"
+                    type="button"
+                    @click="nearbySort = 'recent'"
+                    :disabled="!hasLocation"
+                  >
+                    {{ t('nearbySortRecent') }}
+                  </button>
+                  <button
+                    class="btn btn-sm"
+                    :class="nearbySort === 'nearest' ? 'btn-primary' : 'btn-outline-primary'"
+                    type="button"
+                    @click="nearbySort = 'nearest'"
+                    :disabled="!hasLocation"
+                  >
+                    {{ t('nearbySortNearest') }}
+                  </button>
+                </div>
+              </div>
             </div>
-            <ul v-if="hasLocation && nearbyComments.length" class="list-unstyled mb-0">
+            <ul v-if="hasLocation && sortedNearbyComments.length" class="list-unstyled mb-0">
               <li
-                v-for="comment in nearbyComments"
+                v-for="comment in sortedNearbyComments"
                 :key="`nearby-${comment.id}`"
                 class="border border-primary-subtle bg-primary-subtle text-primary-emphasis rounded-3 p-3 mb-3 shadow-sm position-relative overflow-hidden"
               >
@@ -214,6 +255,9 @@ const {
 const formText = ref('');
 const commentError = ref('');
 const submitting = ref(false);
+const nearbyRadius = ref(10);
+const nearbyRadiusOptions = [10, 50, 200];
+const nearbySort = ref('recent');
 
 const charCount = computed(() => formText.value.length);
 
@@ -234,7 +278,24 @@ const sortedHistoryComments = computed(() => {
   }
   return historyCommentsWithDistance.value;
 });
-const nearbyComments = computed(() => commentStore.nearby(activeLocation.value));
+const nearbyComments = computed(() =>
+  commentStore.nearby(activeLocation.value, nearbyRadius.value)
+);
+const sortedNearbyComments = computed(() => {
+  const comments = nearbyComments.value;
+  if (!comments.length) {
+    return comments;
+  }
+
+  const sorted = [...comments];
+  if (nearbySort.value === 'nearest') {
+    sorted.sort((a, b) => a.distance - b.distance);
+    return sorted;
+  }
+
+  sorted.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  return sorted;
+});
 const trendingTopics = computed(() => commentStore.trending);
 const highlightHashtags = (text = '') =>
   text.replace(/(#[a-z0-9_]+)/gi, '<span class="hashtag">$1</span>');
