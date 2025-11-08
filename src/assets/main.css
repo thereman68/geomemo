@@ -1,14 +1,15 @@
 :root {
   color-scheme: light dark;
-  --bg: #f6f7fb;
-  --fg: #121826;
-  --accent: #2663ff;
-  --accent-soft: rgba(38, 99, 255, 0.12);
-  --panel-bg: #ffffff;
-  --muted: #5c6579;
-  --border: #d7dbe7;
-  --error: #c62828;
-  --success: #1b8d4f;
+  --bg: linear-gradient(180deg, #f4f6ff 0%, #fefefe 45%, #f2f6ff 100%);
+  --fg: #0d1630;
+  --accent: #6366f1;
+  --accent-soft: rgba(99, 102, 241, 0.12);
+  --panel-bg: rgba(255, 255, 255, 0.82);
+  --panel-border: rgba(99, 102, 241, 0.08);
+  --muted: #6b7280;
+  --border: rgba(15, 23, 42, 0.08);
+  --error: #ef4444;
+  --success: #22c55e;
   font-size: 16px;
 }
 
@@ -23,9 +24,39 @@
 body {
   margin: 0;
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--bg);
+  background: var(--bg) no-repeat fixed;
   color: var(--fg);
   min-height: 100vh;
+}
+
+.navbar-glass {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 6px 30px rgba(15, 23, 42, 0.08);
+}
+
+.card-glass {
+  background: var(--panel-bg) !important;
+  border: 1px solid var(--panel-border) !important;
+  backdrop-filter: blur(12px);
+}
+
+.feed-card {
+  border-radius: 20px;
+  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+}
+
+.feed-section-title {
+  font-weight: 700;
+}
+
+.text-soft {
+  color: var(--muted) !important;
+}
+
+.hashtag {
+  color: var(--accent) !important;
+  font-weight: 600;
 }
 
 .app {

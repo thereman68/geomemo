@@ -5,6 +5,7 @@ import { useAuthStore } from './authStore';
 
 const NEARBY_RADIUS_METERS = 10;
 const EARTH_RADIUS_METERS = 6371e3;
+const HASHTAG_REGEX = /#[a-z0-9_]+/gi;
 
 function toRadians(value) {
   return (value * Math.PI) / 180;
@@ -57,18 +58,45 @@ function formatRelativeTime(isoString) {
   return then.toLocaleString();
 }
 
+function extractHashtags(text) {
+  if (!text) return [];
+  const matches = text.match(HASHTAG_REGEX) ?? [];
+  return matches.map((tag) => tag.trim());
+}
+
+function withRelativeTime(comment) {
+  return {
+    ...comment,
+    relativeTime: formatRelativeTime(comment.timestamp),
+  };
+}
+
 export const useCommentStore = defineStore('commentStore', () => {
   const authStore = useAuthStore();
   const comments = ref([]);
   const loading = ref(false);
   const error = ref(null);
 
-  const history = computed(() =>
-    comments.value.map((comment) => ({
-      ...comment,
-      relativeTime: formatRelativeTime(comment.timestamp),
-    }))
-  );
+  const history = computed(() => comments.value.map(withRelativeTime));
+
+  const trendingHashtags = computed(() => {
+    const counts = new Map();
+
+    comments.value.forEach((comment) => {
+      comment.hashtags.forEach((tag) => {
+        const normalized = tag.toLowerCase();
+        if (!counts.has(normalized)) {
+          counts.set(normalized, { label: tag, count: 0 });
+        }
+        counts.get(normalized).count += 1;
+      });
+    });
+
+    return Array.from(counts.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6)
+      .map((entry) => entry.label);
+  });
 
   function nearby(referenceLocation) {
     if (!referenceLocation) return [];
@@ -85,6 +113,22 @@ export const useCommentStore = defineStore('commentStore', () => {
       .filter((comment) => comment.distance <= NEARBY_RADIUS_METERS);
   }
 
+  function historyWithDistance(referenceLocation) {
+    return comments.value.map((comment) => {
+      const base = withRelativeTime(comment);
+      if (!referenceLocation) {
+        return base;
+      }
+
+      const distance = computeDistanceMeters(referenceLocation, comment.location);
+      return {
+        ...base,
+        distance,
+        distanceLabel: formatDistance(distance),
+      };
+    });
+  }
+
   function mapRecordToComment(record) {
     return {
       id: record.id,
@@ -95,6 +139,7 @@ export const useCommentStore = defineStore('commentStore', () => {
         lat: record.location_lat,
         lng: record.location_lng,
       },
+      hashtags: extractHashtags(record.text),
     };
   }
 
@@ -162,7 +207,9 @@ export const useCommentStore = defineStore('commentStore', () => {
   return {
     comments,
     history,
+    historyWithDistance,
     nearby,
+    trending: trendingHashtags,
     addComment,
     refresh,
     loading,
